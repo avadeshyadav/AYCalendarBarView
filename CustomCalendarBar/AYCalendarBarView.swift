@@ -72,6 +72,7 @@ class AYCalendarBarView: UIView, UIScrollViewDelegate {
         settings.plusDays = plusDays
         
         self.allDates = self.getAllVisibleCustomDates()
+        loadScrollViewWithDates(self.allDates!)
     }
     
     func setSelectedTextColor(selectedColor: UIColor, enabledDatesColor enabledColor: UIColor, disabledDatesColor disabledColor: UIColor) {
@@ -95,6 +96,9 @@ class AYCalendarBarView: UIView, UIScrollViewDelegate {
         dateFormatter = NSDateFormatter()
         dateFormatter?.locale = NSLocale.autoupdatingCurrentLocale()
         dateFormatter?.dateFormat = "MMM dd EEE";
+        
+        scrollView = UIScrollView(frame: CGRectMake(0, 0, self.frame.size.width, self.frame.size.height))
+        self.addSubview(scrollView!)
     }
     
     func didTappedOnDateLabel(recognizer: UIGestureRecognizer) {
@@ -228,6 +232,8 @@ class AYCalendarBarView: UIView, UIScrollViewDelegate {
         
         if forwardDates.count != 0 {
             
+            customDates.appendContentsOf(forwardDates)
+
             var lastEnabledDate = forwardDates.last!.date
             if lastEnabledDate == nil {
                 lastEnabledDate = settings.currentDate
@@ -238,8 +244,6 @@ class AYCalendarBarView: UIView, UIScrollViewDelegate {
             if lastDisabledDates.count != 0 {
                 customDates.appendContentsOf(lastDisabledDates)
             }
-            
-            customDates.appendContentsOf(forwardDates)
         }
         
         return customDates;
@@ -254,10 +258,10 @@ class AYCalendarBarView: UIView, UIScrollViewDelegate {
             let customDate = AYCustomDate()
             
             let componentsToAdd = NSDateComponents()
-            componentsToAdd.day = isForward ? index : -index
+            componentsToAdd.day = isForward ? index : -(offset - index)
             
             customDate.isEnabled = isEnabled
-            customDate.date = calendar?.dateByAddingComponents(componentsToAdd, toDate: settings.currentDate!, options: .WrapComponents)
+            customDate.date = calendar?.dateByAddingComponents(componentsToAdd, toDate: date, options: .WrapComponents)
             let dateString = dateFormatter?.stringFromDate(customDate.date!)
             
             if dateString != nil {
