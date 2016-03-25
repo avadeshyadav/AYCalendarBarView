@@ -8,6 +8,10 @@
 
 import UIKit
 
+protocol AYCalendarBarViewDelegate {
+    func didSelectedNewDate(date: NSDate, withIndex index: Int)
+}
+
 class AYCustomDate {
     var date: NSDate?
     var dateString: NSAttributedString?
@@ -22,7 +26,7 @@ class AYCalendarSettings {
     var currentDate: NSDate?
     var minusDayes: Int?
     var plusDays: Int?
-    var maxVisibleOnScreen: Int?
+    var noOfVisibleDatesOnScreen: Int?
     var smallFont: UIFont?
     var bigFont: UIFont?
     
@@ -37,13 +41,13 @@ class AYCalendarSettings {
         currentDate = NSDate()
         minusDayes = 5;
         plusDays = 5;
-        maxVisibleOnScreen = 5;
+        noOfVisibleDatesOnScreen = 5;
         smallFont = UIFont.systemFontOfSize(10.0)
         bigFont = UIFont.boldSystemFontOfSize(12.0)
     }
 }
 
-class AYCalendarBarView: UIView {
+class AYCalendarBarView: UIView, UIScrollViewDelegate {
     
     var scrollView: UIScrollView?
     
@@ -53,7 +57,7 @@ class AYCalendarBarView: UIView {
     var dateFormatter: NSDateFormatter?
     let dateLabelTagOffset = 1000
     var currentSelectedIndex: Int?
-    
+    var delegate: AYCalendarBarViewDelegate?
     
     override func awakeFromNib() {
         super.awakeFromNib()
@@ -95,6 +99,41 @@ class AYCalendarBarView: UIView {
     
     func didTappedOnDateLabel(recognizer: UIGestureRecognizer) {
         
+        let newPage = recognizer.view!.tag// - settings.noOfVisibleDatesOnScreen! / 2
+        handleNewDateIndexWithNumber(newPage)
+    }
+    
+    
+    func handleNewDateSelectionFromScrollViewContentOffset(offset: CGPoint) {
+        let width = self.frame.size.width / CGFloat(settings.noOfVisibleDatesOnScreen!)
+        let newIndex = Int(offset.x + width / 2) / Int(width)
+        self.handleNewDateIndexWithNumber(newIndex)
+    }
+    
+    func handleNewDateIndexWithNumber(newIndex: Int) {
+        
+        if (newIndex == currentSelectedIndex) {
+            return
+        }
+        
+        makeSelectionHighlighted(false, forDateIndex: currentSelectedIndex!)
+        makeSelectionHighlighted(true, forDateIndex: newIndex)
+        self.currentSelectedIndex = newIndex
+        
+        callDelegateWithSelectedIndex()
+        moveScrollViewToDateIndex(newIndex, animated: true)
+        
+    }
+    
+    func moveScrollViewToDateIndex(index: Int, animated: Bool) {
+        
+        let width = self.frame.size.width / CGFloat(settings.noOfVisibleDatesOnScreen!)
+        scrollView?.setContentOffset(CGPointMake(CGFloat(Int(width) * index), 0), animated: animated)
+    }
+    
+    func callDelegateWithSelectedIndex() {
+        let customDate = self.allDates![currentSelectedIndex!]
+        delegate?.didSelectedNewDate(customDate.date!, withIndex: currentSelectedIndex!)
     }
     
     func loadScrollViewWithDates(customDates: Array<AYCustomDate>) {
@@ -104,7 +143,7 @@ class AYCalendarBarView: UIView {
         }
         
         let allCustomDates: NSArray = customDates
-        let width = self.frame.size.width / CGFloat(settings.maxVisibleOnScreen!)
+        let width = self.frame.size.width / CGFloat(settings.noOfVisibleDatesOnScreen!)
         
         for date in allCustomDates {
             
@@ -118,6 +157,7 @@ class AYCalendarBarView: UIView {
             label.numberOfLines = 3
             
             if customDate?.isEnabled == true {
+                label.tag = index
                 let tapGesture = UITapGestureRecognizer(target: self, action: "didTappedOnDateLabel:")
                 label.addGestureRecognizer(tapGesture)
             }
@@ -165,7 +205,7 @@ class AYCalendarBarView: UIView {
     func getAllVisibleCustomDates() -> Array<AYCustomDate> {
         
         var customDates = Array<AYCustomDate>()
-        let disabledMaxDatesLimit = settings.maxVisibleOnScreen! / 2;
+        let disabledMaxDatesLimit = settings.noOfVisibleDatesOnScreen! / 2;
         
         let forwardDates = getDatesFromDate(settings.currentDate!, withOffset: settings.plusDays!, isForward: true, isEnabled: true)
         let backwardDates = getDatesFromDate(settings.currentDate!, withOffset: settings.minusDayes!, isForward: false, isEnabled: true)
@@ -228,6 +268,18 @@ class AYCalendarBarView: UIView {
         }
         
         return cutomDates
+    }
+    
+    
+    //MARK: UIScrollView Delegate Methods
+    func scrollViewDidEndDecelerating(scrollView: UIScrollView) {
+        
+        handleNewDateSelectionFromScrollViewContentOffset(scrollView.contentOffset)
+    }
+    
+    func scrollViewWillEndDragging(scrollView: UIScrollView, withVelocity velocity: CGPoint, targetContentOffset: UnsafeMutablePointer<CGPoint>) {
+        
+        handleNewDateSelectionFromScrollViewContentOffset(targetContentOffset.memory)
     }
     
 }
