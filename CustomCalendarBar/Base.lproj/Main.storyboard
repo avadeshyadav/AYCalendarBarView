@@ -17,12 +17,20 @@
                         <rect key="frame" x="0.0" y="0.0" width="320" height="568"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
-                            <view contentMode="scaleToFill" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="maV-FP-lBV" customClass="AYCalendarBarView" customModule="CustomCalendarBar" customModuleProvider="target">
-                                <rect key="frame" x="0.0" y="108" width="320" height="50"/>
-                                <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
+                            <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="maV-FP-lBV" customClass="AYCalendarBarView" customModule="CustomCalendarBar" customModuleProvider="target">
+                                <rect key="frame" x="0.0" y="108" width="320" height="55"/>
+                                <color key="backgroundColor" red="0.91764705879999997" green="0.91764705879999997" blue="0.91764705879999997" alpha="1" colorSpace="calibratedRGB"/>
+                                <constraints>
+                                    <constraint firstAttribute="height" constant="55" id="7dP-Cw-uIa"/>
+                                </constraints>
                             </view>
                         </subviews>
                         <color key="backgroundColor" white="1" alpha="1" colorSpace="custom" customColorSpace="calibratedWhite"/>
+                        <constraints>
+                            <constraint firstItem="maV-FP-lBV" firstAttribute="top" secondItem="y3c-jy-aDJ" secondAttribute="bottom" constant="88" id="Lmy-gl-Kfu"/>
+                            <constraint firstAttribute="trailing" secondItem="maV-FP-lBV" secondAttribute="trailing" id="jle-zP-385"/>
+                            <constraint firstItem="maV-FP-lBV" firstAttribute="leading" secondItem="8bC-Xf-vdC" secondAttribute="leading" id="x0t-lL-Q7V"/>
+                        </constraints>
                     </view>
                     <simulatedScreenMetrics key="simulatedDestinationMetrics" type="retina4"/>
                     <connections>

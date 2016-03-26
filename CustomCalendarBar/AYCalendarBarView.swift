@@ -23,6 +23,7 @@ class AYCalendarSettings {
     var selectedTextColor: UIColor?
     var enabledTextColor: UIColor?
     var disabledtextColor: UIColor?
+    var selectedBgColor: UIColor?
     var currentDate: NSDate?
     var minusDayes: Int?
     var plusDays: Int?
@@ -35,13 +36,14 @@ class AYCalendarSettings {
     }
     
     func defaultSettings() {
-        selectedTextColor = UIColor.blackColor()
+        selectedTextColor = UIColor.whiteColor()
         enabledTextColor = UIColor.darkGrayColor()
         disabledtextColor = UIColor.lightGrayColor()
+        selectedBgColor = UIColor(red: 22/255, green: 176/255, blue: 255/255, alpha: 1.0)
         currentDate = NSDate()
         minusDayes = 5;
         plusDays = 5;
-        noOfVisibleDatesOnScreen = 5;
+        noOfVisibleDatesOnScreen = 7;
         smallFont = UIFont.systemFontOfSize(10.0)
         bigFont = UIFont.boldSystemFontOfSize(12.0)
     }
@@ -76,17 +78,18 @@ class AYCalendarBarView: UIView, UIScrollViewDelegate {
     }
     
     func setSelectedTextColor(selectedColor: UIColor, enabledDatesColor enabledColor: UIColor, disabledDatesColor disabledColor: UIColor) {
-        
+        settings.selectedTextColor = selectedColor
+        settings.enabledTextColor = enabledColor
+        settings.disabledtextColor = disabledColor
     }
     
     func currentSelectedPageNumber() -> Int {
-        return 1;
+        return currentSelectedIndex!
     }
     
     func currentSelectedDate() -> NSDate {
-        return NSDate()
+        return settings.currentDate!
     }
-    
     
     //MARK: Private Methods
     func doInitialConfigurations() {
@@ -99,14 +102,14 @@ class AYCalendarBarView: UIView, UIScrollViewDelegate {
         
         scrollView = UIScrollView(frame: CGRectMake(0, 0, self.frame.size.width, self.frame.size.height))
         self.addSubview(scrollView!)
+        scrollView?.delegate = self
     }
     
     func didTappedOnDateLabel(recognizer: UIGestureRecognizer) {
         
-        let newPage = recognizer.view!.tag// - settings.noOfVisibleDatesOnScreen! / 2
+        let newPage = recognizer.view!.tag - dateLabelTagOffset
         handleNewDateIndexWithNumber(newPage)
     }
-    
     
     func handleNewDateSelectionFromScrollViewContentOffset(offset: CGPoint) {
         let width = self.frame.size.width / CGFloat(settings.noOfVisibleDatesOnScreen!)
@@ -161,7 +164,8 @@ class AYCalendarBarView: UIView, UIScrollViewDelegate {
             label.numberOfLines = 3
             
             if customDate?.isEnabled == true {
-                label.tag = index
+                label.tag = dateLabelTagOffset + index - settings.noOfVisibleDatesOnScreen! / 2
+                label.userInteractionEnabled = true
                 let tapGesture = UITapGestureRecognizer(target: self, action: "didTappedOnDateLabel:")
                 label.addGestureRecognizer(tapGesture)
             }
@@ -170,11 +174,15 @@ class AYCalendarBarView: UIView, UIScrollViewDelegate {
             }
             
             scrollView?.addSubview(label)
-            scrollView?.contentSize = CGSizeMake(CGFloat(Int(width) * allCustomDates.count), scrollView!.frame.size.height)
-            self.currentSelectedIndex = index
-            scrollView?.contentOffset = CGPointMake(CGFloat(index * Int(width)), 0)
-            makeSelectionHighlighted(true, forDateIndex: index)
+            
+            if (customDate?.date?.compare(settings.currentDate!) == .OrderedSame) {
+                self.currentSelectedIndex = index - settings.noOfVisibleDatesOnScreen! / 2
+            }
         }
+        
+        scrollView?.contentSize = CGSizeMake(CGFloat(Int(width) * allCustomDates.count), scrollView!.frame.size.height)
+        scrollView?.contentOffset = CGPointMake(CGFloat(currentSelectedIndex! * Int(width)), 0)
+        makeSelectionHighlighted(true, forDateIndex: currentSelectedIndex!)
     }
     
     func makeSelectionHighlighted(highlighted: Bool, forDateIndex index: Int) {
@@ -183,11 +191,12 @@ class AYCalendarBarView: UIView, UIScrollViewDelegate {
         
         if highlighted == true {
             label?.textColor = settings.selectedTextColor
-            label?.backgroundColor = UIColor.clearColor()
+            label?.backgroundColor = settings.selectedBgColor
         }
         else {
             label?.textColor = settings.enabledTextColor
-            label?.backgroundColor = UIColor.clearColor()        }
+            label?.backgroundColor = UIColor.clearColor()
+        }
     }
     
     func getAttributesStringFromDateString(dateString: String) -> NSAttributedString {
@@ -230,6 +239,20 @@ class AYCalendarBarView: UIView, UIScrollViewDelegate {
             customDates.appendContentsOf(backwardDates)
         }
         
+      
+        // To add current date
+        let customDate = AYCustomDate()
+        customDate.isEnabled = true
+        customDate.date = settings.currentDate
+        let dateString = dateFormatter?.stringFromDate(customDate.date!)
+        
+        if dateString != nil {
+            customDate.dateString = getAttributesStringFromDateString(dateString!)
+        }
+        
+        customDates.append(customDate)
+        
+        
         if forwardDates.count != 0 {
             
             customDates.appendContentsOf(forwardDates)
@@ -258,7 +281,7 @@ class AYCalendarBarView: UIView, UIScrollViewDelegate {
             let customDate = AYCustomDate()
             
             let componentsToAdd = NSDateComponents()
-            componentsToAdd.day = isForward ? index : -(offset - index)
+            componentsToAdd.day = isForward ? index : -(offset - (index - 1))
             
             customDate.isEnabled = isEnabled
             customDate.date = calendar?.dateByAddingComponents(componentsToAdd, toDate: date, options: .WrapComponents)
