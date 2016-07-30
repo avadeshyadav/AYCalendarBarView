@@ -24,6 +24,10 @@
                                     <constraint firstAttribute="height" constant="55" id="7dP-Cw-uIa"/>
                                 </constraints>
                             </view>
+                            <view contentMode="scaleToFill" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="8fi-Wv-iNh" customClass="AYCalendarBarView" customModule="CustomCalendarBar" customModuleProvider="target">
+                                <rect key="frame" x="21" y="192" width="278" height="55"/>
+                                <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
+                            </view>
                         </subviews>
                         <color key="backgroundColor" white="1" alpha="1" colorSpace="custom" customColorSpace="calibratedWhite"/>
                         <constraints>
@@ -35,6 +39,7 @@
                     <simulatedScreenMetrics key="simulatedDestinationMetrics" type="retina4"/>
                     <connections>
                         <outlet property="calendarView" destination="maV-FP-lBV" id="BXr-13-Jek"/>
+                        <outlet property="calendarView2" destination="8fi-Wv-iNh" id="jHO-BK-hka"/>
                     </connections>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="dkx-z0-nzr" sceneMemberID="firstResponder"/>

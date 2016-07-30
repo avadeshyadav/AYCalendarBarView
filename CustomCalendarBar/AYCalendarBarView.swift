@@ -12,6 +12,13 @@ protocol AYCalendarBarViewDelegate {
     func didSelectedNewDate(date: NSDate, withIndex index: Int)
 }
 
+enum DateSelectionStyle: Int {
+    case SeletedBackground,
+    BottomNotch,
+    Both,
+    None
+}
+
 class AYCustomDate {
     var date: NSDate?
     var dateString: NSAttributedString?
@@ -30,22 +37,24 @@ class AYCalendarSettings {
     var noOfVisibleDatesOnScreen: Int?
     var smallFont: UIFont?
     var bigFont: UIFont?
+    var selectionStyle: DateSelectionStyle?
     
     init () {
         self.defaultSettings()
     }
     
     func defaultSettings() {
-        selectedTextColor = UIColor.whiteColor()
+        selectedTextColor = UIColor.redColor()
         enabledTextColor = UIColor.darkGrayColor()
         disabledtextColor = UIColor.lightGrayColor()
-        selectedBgColor = UIColor(red: 22/255, green: 176/255, blue: 255/255, alpha: 1.0)
+        selectedBgColor = UIColor.clearColor()
         currentDate = NSDate()
         minusDayes = 5;
         plusDays = 5;
         noOfVisibleDatesOnScreen = 7;
         smallFont = UIFont.systemFontOfSize(10.0)
         bigFont = UIFont.boldSystemFontOfSize(12.0)
+        selectionStyle = .Both
     }
 }
 
@@ -57,9 +66,13 @@ class AYCalendarBarView: UIView, UIScrollViewDelegate {
     var settings = AYCalendarSettings()
     var calendar: NSCalendar?
     var dateFormatter: NSDateFormatter?
-    let dateLabelTagOffset = 1000
     var currentSelectedIndex: Int?
     var delegate: AYCalendarBarViewDelegate?
+    
+    //Local constants decleration:
+    let dateLabelTagOffset = 1000
+    let bottomNotchViewTag = 10010
+    
     
     override func awakeFromNib() {
         super.awakeFromNib()
@@ -81,6 +94,34 @@ class AYCalendarBarView: UIView, UIScrollViewDelegate {
         settings.selectedTextColor = selectedColor
         settings.enabledTextColor = enabledColor
         settings.disabledtextColor = disabledColor
+        
+        if (self.allDates != nil) {
+            loadScrollViewWithDates(self.allDates!)
+        }
+    }
+    
+    func setDateSelectionStyle(style: DateSelectionStyle) {
+    
+        //Remove previous selection style first, if this method get called more than once.
+        let notchView: UIView? = self.viewWithTag(bottomNotchViewTag)
+        notchView?.removeFromSuperview()
+        settings.selectedBgColor = UIColor.clearColor()
+        
+        switch style {
+        case .Both:
+            addBottomNotchView()
+            addSelectedBackGroundColor()
+        
+        case .SeletedBackground:
+            addSelectedBackGroundColor()
+
+        case .BottomNotch:
+            addBottomNotchView()
+
+        case .None:
+            break;
+            
+        }
     }
     
     func currentSelectedPageNumber() -> Int {
@@ -143,6 +184,32 @@ class AYCalendarBarView: UIView, UIScrollViewDelegate {
         delegate?.didSelectedNewDate(customDate.date!, withIndex: currentSelectedIndex!)
     }
     
+    func addBottomNotchView() {
+        
+        let view = UIView(frame: CGRectMake(0, self.scrollView!.frame.size.height - 4, self.scrollView!.frame.size.width, 4))
+        view.backgroundColor = UIColor(red: 22/255, green: 176/255, blue: 255/255, alpha: 1.0)
+        view.tag = bottomNotchViewTag
+        self.addSubview(view)
+        
+        //Add bottom notch
+        let shapeLayer = CAShapeLayer()
+        shapeLayer.fillColor = view.backgroundColor?.CGColor
+        let sizeOfNotch: CGFloat = 10
+        
+        let path = CGPathCreateMutable()
+        CGPathMoveToPoint(path, nil, view.center.x - sizeOfNotch/2, 0);
+        CGPathAddLineToPoint(path, nil, view.center.x,  0 - sizeOfNotch/2);
+        CGPathAddLineToPoint(path, nil, view.center.x + sizeOfNotch/2,  0);
+        shapeLayer.path = path;
+        
+        view.layer.addSublayer(shapeLayer)
+        
+    }
+    
+    func addSelectedBackGroundColor() {
+        settings.selectedBgColor = UIColor.lightGrayColor()
+    }
+    
     func loadScrollViewWithDates(customDates: Array<AYCustomDate>) {
         
         for view in scrollView!.subviews {
@@ -166,7 +233,7 @@ class AYCalendarBarView: UIView, UIScrollViewDelegate {
             if customDate?.isEnabled == true {
                 label.tag = dateLabelTagOffset + index - settings.noOfVisibleDatesOnScreen! / 2
                 label.userInteractionEnabled = true
-                let tapGesture = UITapGestureRecognizer(target: self, action: "didTappedOnDateLabel:")
+                let tapGesture = UITapGestureRecognizer(target: self, action: #selector(AYCalendarBarView.didTappedOnDateLabel(_:)))
                 label.addGestureRecognizer(tapGesture)
             }
             else {
@@ -223,19 +290,18 @@ class AYCalendarBarView: UIView, UIScrollViewDelegate {
         let forwardDates = getDatesFromDate(settings.currentDate!, withOffset: settings.plusDays!, isForward: true, isEnabled: true)
         let backwardDates = getDatesFromDate(settings.currentDate!, withOffset: settings.minusDayes!, isForward: false, isEnabled: true)
         
+        var firstEnabledDate = backwardDates.first?.date
+        if firstEnabledDate == nil {
+            firstEnabledDate = settings.currentDate
+        }
+        
+        let startingDisabledDates = getDatesFromDate(firstEnabledDate!, withOffset: disabledMaxDatesLimit, isForward: false, isEnabled: false)
+        
+        if startingDisabledDates.count != 0 {
+            customDates.appendContentsOf(startingDisabledDates)
+        }
+        
         if backwardDates.count != 0 {
-            
-            var firstEnabledDate = backwardDates.first!.date
-            if firstEnabledDate == nil {
-                firstEnabledDate = settings.currentDate
-            }
-            
-            let startingDisabledDates = getDatesFromDate(firstEnabledDate!, withOffset: disabledMaxDatesLimit, isForward: false, isEnabled: false)
-            
-            if startingDisabledDates.count != 0 {
-                customDates.appendContentsOf(startingDisabledDates)
-            }
-            
             customDates.appendContentsOf(backwardDates)
         }
         
@@ -252,21 +318,19 @@ class AYCalendarBarView: UIView, UIScrollViewDelegate {
         
         customDates.append(customDate)
         
-        
         if forwardDates.count != 0 {
-            
             customDates.appendContentsOf(forwardDates)
-
-            var lastEnabledDate = forwardDates.last!.date
-            if lastEnabledDate == nil {
-                lastEnabledDate = settings.currentDate
-            }
-            
-            let lastDisabledDates = getDatesFromDate(lastEnabledDate!, withOffset: disabledMaxDatesLimit, isForward: true, isEnabled: false)
-            
-            if lastDisabledDates.count != 0 {
-                customDates.appendContentsOf(lastDisabledDates)
-            }
+        }
+        
+        var lastEnabledDate = forwardDates.last?.date
+        if lastEnabledDate == nil {
+            lastEnabledDate = settings.currentDate
+        }
+        
+        let lastDisabledDates = getDatesFromDate(lastEnabledDate!, withOffset: disabledMaxDatesLimit, isForward: true, isEnabled: false)
+        
+        if lastDisabledDates.count != 0 {
+            customDates.appendContentsOf(lastDisabledDates)
         }
         
         return customDates;
