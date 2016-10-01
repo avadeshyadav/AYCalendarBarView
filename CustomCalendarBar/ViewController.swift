@@ -23,17 +23,17 @@ class ViewController: UIViewController {
         // Dispose of any resources that can be recreated.
     }
 
-    override func viewWillAppear(animated: Bool) {
+    override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         
-        self.calendarView.setCurrentDate(NSDate(), withMinusNumberOfDays: 10, andPlusDays: 10)
-        self.calendarView.setDateSelectionStyle(.Both)
-        self.calendarView.setSelectedTextColor(UIColor.redColor(), enabledDatesColor: UIColor.blackColor(), disabledDatesColor: UIColor.lightGrayColor())
+        self.calendarView.setCurrentDate(Date(), withMinusNumberOfDays: 10, andPlusDays: 10)
+        self.calendarView.setDateSelectionStyle(.both)
+        self.calendarView.setSelectedTextColor(UIColor.red, enabledDatesColor: UIColor.black, disabledDatesColor: UIColor.lightGray)
         
         self.calendarView2.settings.noOfVisibleDatesOnScreen = 5
-        self.calendarView2.setDateSelectionStyle(.BottomNotch)
-        self.calendarView2.setCurrentDate(NSDate(), withMinusNumberOfDays: 1, andPlusDays: 0)
-        self.calendarView2.layer.borderColor = UIColor.lightGrayColor().CGColor
+        self.calendarView2.setDateSelectionStyle(.bottomNotch)
+        self.calendarView2.setCurrentDate(Date(), withMinusNumberOfDays: 1, andPlusDays: 1)
+        self.calendarView2.layer.borderColor = UIColor.lightGray.cgColor
         self.calendarView2.layer.borderWidth = 1.0
     }
 
